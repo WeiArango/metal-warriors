@@ -11,8 +11,16 @@ export class AudioProvider extends Component {
         this.state = {
             audioFiles: [],
             permissionError: false,
-            dataProvider: new DataProvider((r1, r2) => r1 !== r2)
-        }
+            dataProvider: new DataProvider((r1, r2) => r1 !== r2),
+            playbackObj: null,
+            soundObj: null,
+            currentAudio: {},
+            isPlaying: false,
+            currentAudioIndex: null,
+            playbackPosition: null,
+            playbackDuration: null,
+        };
+        this.totalAudioCount = 0
     }
 
     permissionAlert = () => {
@@ -32,12 +40,13 @@ export class AudioProvider extends Component {
     getAudioFiles = async () => {
         const {dataProvider, audioFiles} = this.state
         let media = await MediaLibrary.getAssetsAsync({
-            mediaType: 'audio',
+            mediaType: 'audio',            
         });
         media = await MediaLibrary.getAssetsAsync({
-            mediaType: 'audio',
+            mediaType: 'audio',           
             first: media.totalCount,
         });
+        this.totalAudioCount = media.totalCount
         this.setState({
             ...this.state, 
             dataProvider: dataProvider.cloneWithRows([...audioFiles, ...media.assets]), 
@@ -86,8 +95,23 @@ export class AudioProvider extends Component {
         this.getPermission()
     }
 
+    updateState = (prevState, newState = {}) => {
+        this.setState({...prevState, ...newState})
+    }
+
     render() {
-        const {audioFiles, dataProvider, permissionError} = this.state
+        const {
+            audioFiles, 
+            dataProvider, 
+            permissionError, 
+            playbackObj, 
+            soundObj, 
+            currentAudio, 
+            isPlaying,
+            currentAudioIndex, 
+            playbackPosition,
+            playbackDuration,
+        } = this.state
         if(permissionError)return <View style={{
             flex: 1,
             justifyContent: 'center',
@@ -96,7 +120,21 @@ export class AudioProvider extends Component {
             <Text style={{fontSize: 25, textAlign: 'center', color: 'red'}}>It looks like you haven't accept the permission.</Text>
         </View>
         return (
-            <AudioContext.Provider value={{ audioFiles, dataProvider }}>
+            <AudioContext.Provider 
+                value={{ 
+                    audioFiles, 
+                    dataProvider, 
+                    playbackObj, 
+                    soundObj, 
+                    currentAudio,
+                    isPlaying,
+                    currentAudioIndex,
+                    totalAudioCount: this.totalAudioCount,
+                    playbackPosition,
+                    playbackDuration,
+                    updateState: this.updateState,
+                }}
+            >
                 {this.props.children}
             </AudioContext.Provider>            
         )
