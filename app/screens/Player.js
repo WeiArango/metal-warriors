@@ -25,7 +25,10 @@ const Player = () => {
                     {`${context.currentAudioIndex + 1} / ${context.totalAudioCount}`}
                 </Text>
                 <View style={styles.midBannerContainer}>
-                    <MaterialCommunityIcons name="music-circle" size={300} color={color.MODAL_BG} />
+                    <MaterialCommunityIcons 
+                    name="music-circle" 
+                    size={300} 
+                    color={context.isPlaying ? color.MODAL_BG : color.FONT_MEDIUM} />
                 </View>
                 <View style={styles.audioPlayerContainer}>
                     <Text numberOfLines={1} style={styles.audioTitle}>{context.currentAudio.filename}</Text>
@@ -43,7 +46,7 @@ const Player = () => {
                         <PlayerButton onPress={() => 
                             console.log('Playing from player')} 
                             style={{marginHorizontal: 30}} 
-                            iconType={context.isPlaying ? 'PLAY' : 'PAUSED'}
+                            iconType={context.isPlaying ? 'PLAY' : 'PAUSE'}
                         />
                         <PlayerButton iconType='NEXT'/>                        
                     </View>

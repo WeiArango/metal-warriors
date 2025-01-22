@@ -10,7 +10,6 @@ export const play = async (playbackObj, uri) => {
     }
 }
 
-
 // Pause audio
 export const pause = async (playbackObj) => {
     try {
@@ -23,7 +22,6 @@ export const pause = async (playbackObj) => {
     }
 }
 
-
 // Resume audio
 export const resume = async (playbackObj) => {
     try {
@@ -33,15 +31,20 @@ export const resume = async (playbackObj) => {
     }
 }
 
-
-
 // Select another audio
 export const playNext = async (playbackObj, uri) => {
     try {
+        if (!playbackObj) {
+            throw new Error("playbackObj is null");
+        }
+
         await playbackObj.stopAsync();
         await playbackObj.unloadAsync();
-        return await play(playbackObj, uri)
+
+        const status = await playbackObj.loadAsync({ uri }, { shouldPlay: true });
+        return status;
     } catch (error) {
-        console.log('Error inside playNext helper method', error.message)
+        console.error("Error in playNext:", error.message);
+        throw error;
     }
 }

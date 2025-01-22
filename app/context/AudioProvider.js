@@ -14,7 +14,7 @@ export class AudioProvider extends Component {
             dataProvider: new DataProvider((r1, r2) => r1 !== r2),
             playbackObj: null,
             soundObj: null,
-            currentAudio: {},
+            currentAudio: null,
             isPlaying: false,
             currentAudioIndex: null,
             playbackPosition: null,
@@ -112,13 +112,16 @@ export class AudioProvider extends Component {
             playbackPosition,
             playbackDuration,
         } = this.state
-        if(permissionError)return <View style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
+        if(permissionError)
+            return 
+            <View style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
         }}>
             <Text style={{fontSize: 25, textAlign: 'center', color: 'red'}}>It looks like you haven't accept the permission.</Text>
         </View>
+        
         return (
             <AudioContext.Provider 
                 value={{ 

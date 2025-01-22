@@ -13,7 +13,7 @@ const PlayerButton = (props) => {
         switch (type) {
             case 'PLAY':
                 return 'pausecircle'; //realted to play
-            case 'PAUSED':
+            case 'PAUSE':
                 return 'playcircleo'; //realted to pause
             case 'NEXT':
                 return 'forward'; //realted to next
