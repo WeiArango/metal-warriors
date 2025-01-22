@@ -7,6 +7,7 @@ import Screen from "../components/Screen";
 import OptionModal from "../components/OptionModal";
 import { Audio } from "expo-av";
 import { pause, play, resume, playNext } from "../misc/AudioController";
+import { storeAudioForNextOpening } from "../misc/helper";
 
 export class AudioList extends Component {
   static contextType = AudioContext;
@@ -47,27 +48,35 @@ export class AudioList extends Component {
       // }
 
       // Reproducir el siguiente audio si el actual termina
-      if(playbackStatus.didJustFinish) {
+      if (playbackStatus.didJustFinish) {
         const nextAudioIndex = this.context.currentAudioIndex + 1;
-        if(nextAudioIndex >= this.context.totalAudioCount){
-          this.context.playbackObj.unloadAsync();
-          return this.context.updateState(this.context, {
+      
+        if (nextAudioIndex >= this.context.totalAudioCount) {
+          await this.context.playbackObj.unloadAsync();
+          console.log("All audio files have been played. Stopping playback.");
+          
+          this.context.updateState(this.context, {
             soundObj: null,
             currentAudio: this.context.audioFiles[0],
             isPlaying: false,
-            currentAudioIndex: 0,              
+            currentAudioIndex: 0,
             playbackPosition: null,
             playbackDuration: null,
-          })
+          });
+          return 
         }
+      
         const audio = this.context.audioFiles[nextAudioIndex];
         const status = await playNext(this.context.playbackObj, audio.uri);
+        console.log("Playing another audio in sequence:", audio.filename);
+      
         this.context.updateState(this.context, {
           soundObj: status,
           currentAudio: audio,
           isPlaying: true,
-          currentAudioIndex: nextAudioIndex
-        })
+          currentAudioIndex: nextAudioIndex,
+        });
+        await storeAudioForNextOpening(audio, nextAudioIndex);
       }
      };
 
@@ -115,7 +124,7 @@ export class AudioList extends Component {
     if (nextAudioIndex >= audioFiles.length) {
       // Si no hay más audios, detener la reproducción
       await playbackObj.stopAsync();
-      await playbackObj.unloadAsync();
+      await playbackObj.unloadAsync();      
       return updateState(this.context, {
         soundObj: null,
         currentAudio: audioFiles[0],
@@ -138,16 +147,22 @@ export class AudioList extends Component {
   };
   
   handleAudioPress = async (audio) => {
-    const { soundObj, playbackObj, currentAudio, updateState, audioFiles } = this.context;
+    const { 
+      soundObj, 
+      playbackObj, 
+      currentAudio, 
+      updateState, 
+      audioFiles 
+    } = this.context;
   
     try {
       // Primera reproducción
       if (soundObj === null) {
-        const playbackObj = new Audio.Sound();
-        //playbackObj.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
+        const playbackObj = new Audio.Sound();               
         const status = await play(playbackObj, audio.uri);
         const index = audioFiles.indexOf(audio);
   
+        storeAudioForNextOpening(audio, index);
         console.log("Playing audio:", audio.filename);
   
         this.startProgressUpdateInterval(playbackObj);
@@ -159,7 +174,7 @@ export class AudioList extends Component {
           isPlaying: true,
           currentAudioIndex: index,
         });  
-        return;
+        return 
       }
   
       // Pausar audio
@@ -191,13 +206,14 @@ export class AudioList extends Component {
       // Reproducir otro audio
       if (soundObj.isLoaded && currentAudio.id !== audio.id) {
         const index = audioFiles.indexOf(audio);
+        const status = await playNext(playbackObj, audio.uri);                      
+        console.log("Playing another audio:", audio.filename);
+        
         playbackObj.setOnPlaybackStatusUpdate(this.onPlaybackStatusUpdate);
-        const status = await playNext(playbackObj, audio.uri);
+        storeAudioForNextOpening(audio, index);
   
         this.stopProgressUpdateInterval();
-        this.startProgressUpdateInterval(playbackObj);
-  
-        console.log("Playing another audio:", audio.filename);
+        this.startProgressUpdateInterval(playbackObj);  
   
         updateState(this.context, {
           currentAudio: audio,
@@ -205,12 +221,16 @@ export class AudioList extends Component {
           isPlaying: true,
           currentAudioIndex: index,
         });  
-        return;
+        return 
       }
     } catch (error) {
       console.error("Error in handleAudioPress:", error.message);
     }
   };  
+
+  componentDidMount() {
+    this.context.loadPreviousAudio();
+  }
 
   rowRenderer = (type, item, index, extendedState) => {
     return (
@@ -231,7 +251,8 @@ export class AudioList extends Component {
   render() {
     return (
       <AudioContext.Consumer>
-        {({ dataProvider, isPlaying }) => {
+        {({ dataProvider, isPlaying }) => {  
+          if(!dataProvider._data.length) return null;       
           return (
             <Screen>
               <RecyclerListView

@@ -2,6 +2,8 @@ import React, { Component, createContext } from "react";
 import { View, Text, Alert } from "react-native";
 import * as MediaLibrary from 'expo-media-library';
 import { DataProvider } from "recyclerlistview";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Audio } from "expo-av";
 
 export const AudioContext = createContext()
 export class AudioProvider extends Component {    
@@ -14,7 +16,7 @@ export class AudioProvider extends Component {
             dataProvider: new DataProvider((r1, r2) => r1 !== r2),
             playbackObj: null,
             soundObj: null,
-            currentAudio: null,
+            currentAudio: {},
             isPlaying: false,
             currentAudioIndex: null,
             playbackPosition: null,
@@ -51,7 +53,29 @@ export class AudioProvider extends Component {
             ...this.state, 
             dataProvider: dataProvider.cloneWithRows([...audioFiles, ...media.assets]), 
             audioFiles: [...audioFiles, ...media.assets]})        
-    }    
+    }   
+    
+    loadPreviousAudio = async () => {
+        //TODO: we need to load audio from our async storage
+        let previousAudio = await AsyncStorage.getItem('previousAudio');
+        let currentAudio;
+        let currentAudioIndex; 
+
+        if(previousAudio === null){
+            currentAudio = this.state.audioFiles[0];
+            currentAudioIndex = 0;
+        } else {
+            previousAudio = JSON.parse(previousAudio);
+            currentAudio = previousAudio.audio
+            currentAudioIndex = previousAudio.index
+        }
+
+        this.setState({
+            ...this.state, 
+            currentAudio, 
+            currentAudioIndex
+        });
+    }
 
     getPermission = async () => {
     // {
@@ -92,7 +116,13 @@ export class AudioProvider extends Component {
     }
 
     componentDidMount() {
-        this.getPermission()
+        this.getPermission();
+        if(this.state.playbackObj === null){
+            this.setState({
+                ...this.state, 
+                playbackObj: new Audio.Sound()
+            })
+        }
     }
 
     updateState = (prevState, newState = {}) => {
@@ -136,6 +166,7 @@ export class AudioProvider extends Component {
                     playbackPosition,
                     playbackDuration,
                     updateState: this.updateState,
+                    loadPreviousAudio: this.loadPreviousAudio,
                 }}
             >
                 {this.props.children}
