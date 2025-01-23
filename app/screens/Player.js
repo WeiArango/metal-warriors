@@ -6,7 +6,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Slider from '@react-native-community/slider';
 import PlayerButton from "../components/PlayerButton";
 import { AudioContext } from "../context/AudioProvider";
-import { play, pause, resume } from "../misc/AudioController";
+import { play, pause, resume, playNext } from "../misc/AudioController";
+import { storeAudioForNextOpening } from "../misc/helper";
 
 const {width} = Dimensions.get('window')
 
@@ -57,6 +58,70 @@ const Player = () => {
         }
     }     
 
+    const handleNext = async () => {
+        const { isLoaded } = await context.playbackObj.getStatusAsync();
+        const isLastAudio = context.currentAudioIndex + 1 === context.totalAudioCount;
+        let audio;
+        let index;
+        let status;
+      
+        if (isLastAudio) {
+          // Si es el último audio, reiniciar la lista desde el principio
+          index = 0;
+          audio = context.audioFiles[index];
+          status = await playNext(context.playbackObj, audio.uri);
+        } else {
+          // Si no es el último audio, reproducir el siguiente
+          index = context.currentAudioIndex + 1;
+          audio = context.audioFiles[index];
+          status = isLoaded ? await playNext(context.playbackObj, audio.uri) : await play(context.playbackObj, audio.uri);
+        }
+      
+        console.log("Playing next audio:", audio.filename);
+      
+        context.updateState(context, {
+          currentAudio: audio,
+          playbackObj: context.playbackObj,
+          soundObj: status,
+          isPlaying: true,
+          currentAudioIndex: index,
+        });
+      
+        storeAudioForNextOpening(audio, index);
+    };
+
+    const handlePrevious = async () => {
+        const { isLoaded } = await context.playbackObj.getStatusAsync();
+        const isFirstAudio = context.currentAudioIndex === 0;
+        let audio;
+        let index;
+        let status;
+      
+        if (isFirstAudio) {
+          // Si es el primer audio, reproducir el último de la lista
+          index = context.totalAudioCount - 1;
+          audio = context.audioFiles[index];
+          status = await playNext(context.playbackObj, audio.uri);
+        } else {
+          // Si no es el primer audio de la lista, reproducir el anterior
+          index = context.currentAudioIndex - 1;
+          audio = context.audioFiles[index];
+          status = isLoaded ? await playNext(context.playbackObj, audio.uri) : await play(context.playbackObj, audio.uri);
+        }
+      
+        console.log("Playing previous audio:", audio.filename);
+      
+        context.updateState(context, {
+          currentAudio: audio,
+          playbackObj: context.playbackObj,
+          soundObj: status,
+          isPlaying: true,
+          currentAudioIndex: index,
+        });
+      
+        storeAudioForNextOpening(audio, index);
+    };
+
         
   
 
@@ -86,13 +151,19 @@ const Player = () => {
                         maximumTrackTintColor={color.FONT_MEDIUM}
                     />
                     <View style={styles.audioControllers}>
-                        <PlayerButton iconType='PREV'/>
+                        <PlayerButton 
+                            iconType='PREV'
+                            onPress={handlePrevious}
+                        />
                         <PlayerButton 
                             onPress={handlePlayPause}
                             style={{marginHorizontal: 30}} 
                             iconType={context.isPlaying ? 'PLAY' : 'PAUSE'}
                         />
-                        <PlayerButton iconType='NEXT'/>                        
+                        <PlayerButton 
+                        iconType='NEXT'
+                        onPress={handleNext}
+                        />                        
                     </View>
                 </View>
             </View>

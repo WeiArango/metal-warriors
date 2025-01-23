@@ -21,6 +21,7 @@ export class AudioProvider extends Component {
             currentAudioIndex: null,
             playbackPosition: null,
             playbackDuration: null,
+            loadPreviousAudio: this.loadPreviousAudio,
         };
         this.totalAudioCount = 0
     }
